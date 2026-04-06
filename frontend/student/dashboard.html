@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard – PRPCEM NoteBridge</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+  <link rel="stylesheet" href="../css/animations.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .latest-band{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1.5px solid #6EE7B7;border-radius:var(--radius-lg);padding:.6rem 1.2rem;display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;font-size:.85rem;font-weight:600;color:#065F46;}
+    .latest-dot{width:10px;height:10px;border-radius:50%;background:var(--success);animation:pulse-badge 1.8s infinite;}
+    .notes-section-title{font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+    .preview-embed{width:100%;height:500px;border:none;border-radius:var(--radius-md);background:var(--gray-100);}
+    .preview-img{width:100%;max-height:500px;object-fit:contain;border-radius:var(--radius-md);display:block;background:#f1f5f9;}
+    .preview-unsupported{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--text-muted);font-size:.95rem;}
+    .preview-unsupported .preview-icon{font-size:4rem;}
+    .adv-filter-panel{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:1.25rem;display:none;margin-bottom:1rem;animation:fadeInDown .3s ease;}
+    .adv-filter-panel.open{display:block;}
+    .adv-filter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+    .btn-bookmark-active{color:var(--warning)!important;}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="page-content dashboard-wrapper">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo">
+  <img src="../images/logo.png" class="sidebar-logo-img" alt="Logo">
+  <div>
+    <div class="sidebar-logo-text">NoteBridge</div>
+    <div class="sidebar-logo-sub">Student Portal</div>
+  </div>
+</div>
+      <!-- <div><div class="sidebar-logo-text">NoteBridge</div><div class="sidebar-logo-sub">Student Portal</div></div> -->
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main Menu</div>
+      <div class="nav-item active" data-section="sec-home" onclick="showSection('sec-home',this)"><span class="nav-icon">🏠</span> Home</div>
+      <!-- <div class="nav-item" data-section="sec-notes" onclick="showSection('sec-notes',this)"><span class="nav-icon">📚</span> Browse Notes</div> -->
+      <!-- <div class="nav-item" data-section="sec-bookmarks" onclick="showSection('sec-bookmarks',this)"><span class="nav-icon">⭐</span> Bookmarks</div> -->
+      <!-- <div class="nav-item" data-section="sec-doubts" onclick="showSection('sec-doubts',this)"><span class="nav-icon">💬</span> Doubts &amp; Comments<span class="nav-badge">3</span></div> -->
+      <div class="nav-section-label">Account</div>
+      <div class="nav-item" onclick="window.location.href='profile.html'"><span class="nav-icon">👤</span> My Profile</div>
+      <!-- <div class="nav-item" onclick="showSection('sec-settings',this)"><span class="nav-icon">⚙️</span> Settings</div> -->
+      <div class="nav-item" onclick="sessionStorage.clear(); window.location.href='../login.html'"><span class="nav-icon">🚪</span> Sign Out</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar-placeholder avatar-md" style="border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));font-size:.9rem;width:40px;height:40px;display:grid;place-items:center;font-weight:700;color:white;">RS</div>
+        <div><div class="user-name">Ravi Sharma</div><div class="user-role">CSE · 3rd Year</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main-content">
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="navbar-left">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <!-- Search bar removed -->
+      </div>
+      <div class="navbar-right">
+        <!-- <button class="btn btn-ghost btn-sm" onclick="document.getElementById('adv-panel').classList.toggle('open')">🎛️ Filters</button> -->
+        <div class="navbar-icon-btn" id="notif-bell" title="Notifications">
+          🔔
+          <span class="notif-dot" id="notif-badge">4</span>
+          <!-- Dropdown -->
+          <div class="notif-dropdown" id="notif-dropdown">
+            <div class="notif-header">
+              <span style="font-weight:700;font-size:.9rem;">Notifications</span>
+              <button class="btn btn-ghost btn-sm" id="notif-mark-all">Mark all read</button>
+            </div>
+            <div class="notif-list" id="notif-list-container">
+              <div style="padding:1rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">
+                Loading notifications...
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="avatar-placeholder avatar-md" style="border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));font-size:.85rem;cursor:pointer;font-weight:700;color:white;width:40px;height:40px;display:grid;place-items:center;">RS</div>
+      </div>
+    </header>
+
+    <main class="page-body">
+
+      <!-- Advanced Filter Panel -->
+      <div class="adv-filter-panel" id="adv-panel">
+        <div style="font-weight:700;margin-bottom:.875rem;font-size:.9rem;">🎛️ Advanced Filters</div>
+        <div class="adv-filter-grid">
+          <div class="input-group"><label>Subject</label>
+            <select class="select" onchange="filterNotes()"><option value="">All Subjects</option><option>Data Structures</option><option>DBMS</option><option>OS</option><option>CN</option><option>MATHS III</option></select>
+          </div>
+          <div class="input-group"><label>Teacher</label>
+            <select class="select" onchange="filterNotes()"><option value="">All Teachers</option><option>Prof. Deshmukh</option><option>Prof. Suryavanshi</option><option>Prof. Katore</option><option>Prof. Meshram</option></select>
+          </div>
+          <div class="input-group"><label>File Type</label>
+            <select class="select" onchange="filterNotes()"><option value="">All Types</option><option>PDF</option><option>PPT</option><option>DOC</option><option>Image</option></select>
+          </div>
+          <div class="input-group"><label>Date From</label><input type="date" class="input"/></div>
+          <div class="input-group"><label>Date To</label><input type="date" class="input"/></div>
+          <div class="input-group"><label>Sort By</label>
+            <select class="select"><option>Newest First</option><option>Oldest First</option><option>Most Downloaded</option><option>Most Viewed</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:.875rem;">
+          <button class="btn btn-primary btn-sm">Apply Filters</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('adv-panel').classList.remove('open')">Close</button>
+        </div>
+      </div>
+
+      <!-- ── HOME SECTION ── -->
+      <div id="sec-home">
+        <!-- Greeting -->
+        <div class="page-header">
+          <div><div class="page-title">Good evening, Ravi! 👋</div><div class="page-subtitle"></div></div>
+          <!-- <button class="btn btn-primary" onclick="showSection('sec-notes',null)">Browse All Notes →</button> -->
+        </div>
+
+        <!-- Stats -->
+        <!-- <div class="grid grid-4 gap-4" style="margin-bottom:2rem;">
+          <div class="stat-card blue animate-fadeInUp"><div class="stat-icon" style="background:var(--primary-light);">📚</div><div class="stat-value" data-count="24">0</div><div class="stat-label">Notes Viewed</div><div class="stat-change up">↑ 4 this week</div></div>
+          <div class="stat-card green animate-fadeInUp delay-100"><div class="stat-icon" style="background:var(--success-light);">⬇️</div><div class="stat-value" data-count="11">0</div><div class="stat-label">Downloads</div><div class="stat-change up">↑ 2 today</div></div>
+          <div class="stat-card yellow animate-fadeInUp delay-200"><div class="stat-icon" style="background:var(--warning-light);">⭐</div><div class="stat-value" data-count="7">0</div><div class="stat-label">Bookmarks</div></div>
+          <div class="stat-card purple animate-fadeInUp delay-300"><div class="stat-icon" style="background:var(--purple-light);">💬</div><div class="stat-value" data-count="5">0</div><div class="stat-label">Comments</div></div>
+        </div> -->
+
+        <!-- Latest Today -->
+        <!-- <div class="latest-band"><div class="latest-dot"></div>3 notes uploaded today — check them out!</div>
+        <div class="notes-section-title">🟢 Latest Notes Today</div>
+        <div class="grid grid-auto gap-4" style="margin-bottom:2rem;" id="today-notes"> -->
+          <!-- Note cards injected by JS -->
+        <!-- </div> -->
+
+        <!-- Continue learning -->
+        <!-- <div class="notes-section-title">📖 Continue Learning</div>
+        <div class="grid grid-auto gap-4" id="continue-notes"></div>
+      </div> -->
+
+      <!-- ── SUBJECTS SECTION ── -->
+      <div id="sec-subjects" style="margin-bottom:2rem;">
+        <div class="page-header">
+          <div><div class="page-title">My Subjects & Teachers 📖</div><div class="page-subtitle">Your curriculum and assigned faculty</div></div>
+        </div>
+        <div class="grid grid-auto gap-4">
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(59,130,246,0.3);" onclick="filterBySubject('Node JS Lab - Practical','Ms. Samar Khan Mam')">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:4px;">Node JS Lab - Practical</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Samar Khan Mam</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(16,185,129,0.3);" onclick="filterBySubject('R Programming Lab - Practical','Ms. Ankita Bhagat')">
+            <div style="font-weight:700;color:var(--success);margin-bottom:4px;">R Programming Lab - Practical</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Ankita Bhagat</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(139,92,246,0.3);" onclick="filterBySubject('AI &amp; DS Lab - Practical','Ms. Poonam Pawar')">
+            <div style="font-weight:700;color:var(--purple);margin-bottom:4px;">AI & DS Lab - Practical</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Poonam Pawar</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(245,158,11,0.3);" onclick="filterBySubject('Computer Network Lab - Practical','Ms. Pinky Dembla')">
+            <div style="font-weight:700;color:var(--warning);margin-bottom:4px;">Computer Network Lab - Practical</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms Pinky Dembla</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(59,130,246,0.3);" onclick="filterBySubject('AI &amp; DS - Theory','Dr. Ajay Gadicha')">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:4px;">AI & DS - Theory</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Dr. Ajay Gadicha</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(16,185,129,0.3);" onclick="filterBySubject('Reasoning &amp; Thinking (OE II) - Theory','Mr. Nikhil Belokar')">
+            <div style="font-weight:700;color:var(--success);margin-bottom:4px;">Reasoning & Thinking (OE II) - Theory</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Mr. Nikhil Belokar</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(139,92,246,0.3);" onclick="filterBySubject('Computer Network - Theory','Ms. Poonam Pawar')">
+            <div style="font-weight:700;color:var(--purple);margin-bottom:4px;">Computer Network - Theory</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Poonam Pawar</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(245,158,11,0.3);" onclick="filterBySubject('Universal Human Values - Theory','Ms. Suvarna Virulkar')">
+            <div style="font-weight:700;color:var(--warning);margin-bottom:4px;">Universal Human Values - Theory</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Suvarna Virulkar</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(59,130,246,0.3);" onclick="filterBySubject('Operating System','Ms. Mohini Mohod')">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:4px;">Operating System</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Mohini Mohod</div>
+          </div>
+          <div class="stat-card hover-lift" style="cursor:pointer;background:var(--glass);border:1px solid rgba(16,185,129,0.3);" onclick="filterBySubject('MDM - IoT','Ms. Sneha Tingane')">
+            <div style="font-weight:700;color:var(--success);margin-bottom:4px;">MDM - IoT</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);">Ms. Sneha Tingane</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BROWSE NOTES SECTION ── -->
+      <div id="sec-notes" style="display:none;">
+        <div class="page-header">
+          <div><div class="page-title">Browse Notes 📚</div><div class="page-subtitle">2,450 notes across 38 subjects</div></div>
+        </div>
+        <!-- Filter chips -->
+        <div class="filter-bar">
+          <div class="filter-chip active" data-filter="all" data-filter-group="cat" onclick="chipFilter('all',this)">All</div>
+          <div class="filter-chip" data-filter="ds" data-filter-group="cat" onclick="chipFilter('ds',this)">Data Structures</div>
+          <div class="filter-chip" data-filter="dbms" data-filter-group="cat" onclick="chipFilter('dbms',this)">DBMS</div>
+          <div class="filter-chip" data-filter="os" data-filter-group="cat" onclick="chipFilter('os',this)">OS</div>
+          <div class="filter-chip" data-filter="cn" data-filter-group="cat" onclick="chipFilter('cn',this)">Comp. Networks</div>
+          <div class="filter-chip" data-filter="math" data-filter-group="cat" onclick="chipFilter('math',this)">Mathematics</div>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('adv-panel').classList.toggle('open')">+ More Filters</button>
+        </div>
+        <div class="grid grid-auto gap-4" id="all-notes-grid"></div>
+      </div>
+
+      <!-- ── BOOKMARKS SECTION ── -->
+      <div id="sec-bookmarks" style="display:none;">
+        <div class="page-header"><div><div class="page-title">My Bookmarks ⭐</div><div class="page-subtitle">7 saved notes</div></div></div>
+        <div class="grid grid-auto gap-4" id="bookmark-grid"></div>
+      </div>
+
+      <!-- ── SUBJECT DETAILS SECTION ── -->
+      <div id="sec-subject-detail" style="display:none;">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="detail-subject-name">Subject Name</div>
+            <div class="page-subtitle" id="detail-subject-teacher">Assigned Faculty</div>
+          </div>
+          <button class="btn btn-ghost" onclick="goBackToSubjects()">← Back to Subjects</button>
+        </div>
+        
+        <div class="card-solid">
+          <div class="card-header"><strong>📂 Available Notes & Study Material</strong></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Note Name</th>
+                  <th>Type</th>
+                  <th>Upload Date</th>
+                  <th>Faculty</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="subject-notes-table">
+                <!-- Notes injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── PROFILE SECTION ── -->
+<div id="sec-profile" style="display:none; padding: 2rem;">
+  <div class="page-header"><div><div class="page-title">My Profile 👤</div><div class="page-subtitle">Manage your personal information</div></div></div>
+  <div class="card-solid" style="max-width: 600px;">
+    <div class="card-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+      <div style="display:flex; align-items:center; gap: 20px;">
+        <div class="avatar-placeholder avatar-md" style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent)); color:white; font-size:2rem; display:grid; place-items:center; font-weight:700;" id="prof-avatar">RS</div>
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('avatar-upload').click()">Upload New Image</button>
+          <input type="file" id="avatar-upload" style="display:none;" accept="image/*" onchange="showToast('info','Image selected','Click Save Profile to upload.')" />
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:8px;">Format: JPG, PNG. Max size: 2MB.</div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" class="input" id="prof-name" disabled />
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" class="input" id="prof-email" disabled />
+      </div>
+      <div class="form-row2">
+        <div class="input-group">
+          <label>Roll Number</label>
+          <input type="text" class="input" id="prof-roll" disabled />
+        </div>
+        <div class="input-group">
+          <label>Enrolment No</label>
+          <input type="text" class="input" id="prof-enrolment" disabled />
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="input-group">
+          <label>Branch</label>
+          <input type="text" class="input" id="prof-branch" disabled />
+        </div>
+        <div class="input-group">
+          <label>Section</label>
+          <input type="text" class="input" id="prof-section" disabled />
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Phone Number</label>
+        <input type="text" class="input" id="prof-phone" disabled />
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="showToast('success','Profile Updated','Changes have been saved successfully.')">Save Profile</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Preview Modal ── -->
+<div class="modal-overlay" id="modal-preview">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="preview-title">Note Preview</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-primary btn-sm" id="modal-download-btn" onclick="downloadCurrentNote()">⬇ Download</button>
+        <span class="modal-close" onclick="closeModal('modal-preview')">✕</span>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:1rem;">
+      <div id="preview-container"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <div>
+        <span class="badge badge-success">✅ Final Verified Version</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <!-- <button class="btn btn-ghost btn-sm bookmark-btn" onclick="toggleBookmarkModal()">⭐ Bookmark</button>
+        <button class="btn btn-outline btn-sm" onclick="openModal('modal-comment')">💬 Comment</button> -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Version Modal Removed -->
+
+<!-- ── Comment Modal ── -->
+<div class="modal-overlay" id="modal-comment">
+  <div class="modal modal-sm">
+    <div class="modal-header"><span class="modal-title">💬 Add Comment / Doubt</span><span class="modal-close" onclick="closeModal('modal-comment')">✕</span></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="input-group"><label>Your question or comment</label><textarea class="input" rows="4" placeholder="Type your doubt or feedback here…"></textarea></div>
+      <div class="tab-group"><div class="tab-btn active">💬 Comment</div><div class="tab-btn">❓ Doubt</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-comment')">Cancel</button><button class="btn btn-primary" onclick="closeModal('modal-comment');showToast('success','Posted!','Your comment was added successfully.')">Post Comment</button></div>
+  </div>
+</div>
+
+<!-- ── Chatbot ── -->
+<div class="chatbot-fab" id="chatbot-fab">🤖</div>
+<div class="chatbot-window" id="chatbot-window">
+  <div class="chatbot-header">
+    <div class="chatbot-avatar">🤖</div>
+    <div><div class="chatbot-name">NoteBot</div><div class="chatbot-status">🟢 Online · AI Assistant</div></div>
+    <button id="chatbot-close" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;display:grid;place-items:center;">✕</button>
+  </div>
+  <div class="chatbot-body" id="chatbot-body"></div>
+  <div class="chatbot-input-wrap">
+    <input id="chatbot-input" class="chatbot-input" placeholder="Ask NoteBot anything…"/>
+    <button class="btn btn-primary btn-icon" id="chatbot-send">➤</button>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="../js/background.js"></script>
+<script src="../js/notifications.js"></script>
+<script src="../js/chatbot.js"></script>
+<script src="../js/app.js"></script>
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://notebridge-backend.onrender.com/api';
+let NOTES = [];
+let currentUser = null;
+
+async function apiGet(endpoint) {
+  const res = await fetch(`${API}${endpoint}`, {
+    headers: { 'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}` },
+  });
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  return res.json();
+}
+
+async function apiPost(endpoint, body = {}) {
+  const res = await fetch(`${API}${endpoint}`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}`
+    },
+    body: JSON.stringify(body),
+  });
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  return res.json();
+}
+
+async function init() {
+  const token = sessionStorage.getItem('nb_token');
+  const userStr = sessionStorage.getItem('nb_user');
+  if(!token || !userStr) { window.location.href = '../login.html'; return; }
+  
+  try {
+    currentUser = JSON.parse(userStr);
+    if(currentUser.role !== 'student') { window.location.href = '../login.html'; return; }
+    
+    // Update UI with user info
+    document.querySelectorAll('.avatar-md').forEach(el => el.textContent = (currentUser.firstName[0] + (currentUser.lastName[0]||'')).toUpperCase());
+    document.querySelectorAll('.user-name').forEach(el => el.textContent = `${currentUser.firstName} ${currentUser.lastName}`);
+    document.querySelectorAll('.user-role').forEach(el => el.textContent = `${currentUser.branch||'CSE'} · ${currentUser.year||'Student'}`);
+    const hour = new Date().getHours();
+    let greeting = 'Good evening';
+    if (hour < 12) greeting = 'Good morning';
+    else if (hour < 17) greeting = 'Good afternoon';
+    document.querySelector('.page-title').textContent = `${greeting}, ${currentUser.firstName}! 👋`;
+    
+    // Fill profile
+    document.getElementById('prof-name').value = `${currentUser.firstName} ${currentUser.lastName}`;
+    document.getElementById('prof-email').value = currentUser.email;
+    document.getElementById('prof-roll').value = currentUser.rollNumber || '';
+    document.getElementById('prof-enrolment').value = currentUser.enrolmentNo || '';
+    document.getElementById('prof-branch').value = currentUser.branch || '';
+    document.getElementById('prof-section').value = currentUser.section || '';
+    document.getElementById('prof-phone').value = currentUser.phone || '';
+
+    await loadNotes();
+    await loadBookmarks();
+
+    // Render initially
+    renderNotes('today-notes', NOTES.slice(0, 3)); // show top 3 as latest
+    renderNotes('continue-notes', NOTES.slice(3, 7)); // next 4
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function loadNotes(query = '') {
+  try {
+    const res = await apiGet(`/notes${query}`);
+    if(res.success) { NOTES = res.data; }
+  } catch(e) { console.error('Failed to load notes', e); }
+}
+
+async function loadBookmarks() {
+  try {
+    const res = await apiGet('/bookmarks');
+    if(res.success) {
+      const bms = res.data.map(b => b.note ? b.note._id : null);
+      NOTES.forEach(n => n.isBookmarked = bms.includes(n._id));
+      renderNotes('all-notes-grid', NOTES);
+      renderNotes('bookmark-grid', NOTES.filter(n => n.isBookmarked));
+    }
+  } catch(e) { console.error('Bookmarks load error', e); }
+}
+
+const typeColors = {PDF:'file-pdf',PPT:'file-ppt',DOC:'file-doc',Image:'file-img',ZIP:'file-zip'};
+const typeEmojis = {PDF:'📄',PPT:'📊',DOC:'📝',Image:'🖼️',ZIP:'🗜️'};
+
+function formatDate(dateStr) {
+  if(!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function noteCard(n){
+  const t = n.fileType || 'PDF';
+  const isNew = (Date.now() - new Date(n.createdAt).getTime()) < 86400000;
+  const teacherName = n.uploadedBy ? `${n.uploadedBy.firstName} ${n.uploadedBy.lastName}` : 'Admin';
+  
+  return `<div class="note-card hover-lift" data-searchable id="nc-${n._id}">
+    ${isNew ? '<span class="badge badge-new" style="position:absolute;top:12px;right:12px;">🟢 New</span>' : ''}
+    <div class="note-card-icon" style="background:var(--primary-light);">${typeEmojis[t]||'📄'}</div>
+    <div class="note-card-title">${n.title}</div>
+    <div class="note-card-sub">📖 ${n.subject} · 👤 ${teacherName}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.5rem;">
+      <span class="file-type-badge ${typeColors[t]||'file-pdf'}">${t}</span>
+      <span class="badge badge-gray">📅 ${formatDate(n.createdAt)}</span>
+    </div>
+    <div style="font-size:.75rem;color:var(--text-muted);display:flex;gap:12px;">
+      <span>👁 ${n.views || 0} views</span><span>⬇ ${n.downloads || 0} downloads</span>
+    </div>
+    <div class="note-card-actions">
+      <button class="btn btn-primary btn-sm" onclick="previewNote('${n._id}')">👀 Preview</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadNote('${n._id}', '${n.title.replace(/'/g, "\\'")}')">⬇ Download</button>
+      <button class="btn btn-icon btn-sm ${n.isBookmarked?'btn-bookmark-active':''}" onclick="toggleBM(this,'${n._id}')" title="Bookmark" style="${n.isBookmarked?'color:var(--warning)':''}"><span style="font-size:1.1rem">⭐</span></button>
+    </div>
+  </div>`;
+}
+
+function renderNotes(target, filtered){
+  const el = document.getElementById(target);
+  if(!el) return;
+  if(filtered.length === 0) { el.innerHTML = '<div style="color:var(--text-muted);padding:1rem;">No notes found.</div>'; return; }
+  el.innerHTML = filtered.map(n => noteCard(n)).join('');
+}
+
+async function filterBySubject(sub, teacher) {
+  // Hide subjects grid, show detail panel
+  document.getElementById('sec-subjects').style.display = 'none';
+  document.getElementById('sec-subject-detail').style.display = 'block';
+
+  document.getElementById('detail-subject-name').textContent = sub;
+  document.getElementById('detail-subject-teacher').textContent = teacher ? `👩‍🏫 ${teacher} • Loading notes...` : 'Loading notes...';
+
+  try {
+    const res = await apiGet(`/notes?subject=${encodeURIComponent(sub)}`);
+    if(res.success) {
+      const notes = res.data;
+      const tb = document.getElementById('subject-notes-table');
+      if(notes.length === 0) {
+        tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted);">No notes available for this subject yet. Check back later!</td></tr>';
+        document.getElementById('detail-subject-teacher').textContent = teacher ? `👩‍🏫 ${teacher} • No notes yet` : 'No notes yet';
+      } else {
+        tb.innerHTML = notes.map(n => `
+          <tr>
+            <td><div style="font-weight:600;color:var(--text-primary);">${n.title}</div><div style="font-size:.75rem;color:var(--text-muted);margin-top:2px;">${n.description ? n.description.slice(0,60)+'...' : ''}</div></td>
+            <td><span class="file-type-badge ${typeColors[n.fileType]||'file-pdf'}">${n.fileType||'PDF'}</span></td>
+            <td><div style="font-size:0.8rem;color:var(--text-secondary);">${formatDate(n.createdAt)}</div></td>
+            <td><div style="font-size:0.8rem;">${n.uploadedBy ? n.uploadedBy.firstName + ' ' + n.uploadedBy.lastName : 'Admin'}</div></td>
+            <td style="text-align:right;">
+              <button class="btn btn-primary btn-sm" onclick="previewNote('${n._id}')">👀 View</button>
+              <button class="btn btn-outline btn-sm" onclick="downloadNote('${n._id}', '${n.title.replace(/'/g, "\\'")}')">⬇ Download</button>
+            </td>
+          </tr>
+        `).join('');
+        document.getElementById('detail-subject-teacher').textContent = teacher
+          ? `👩‍🏫 ${teacher} • ${notes.length} note${notes.length !== 1 ? 's' : ''} available`
+          : `${notes.length} notes found`;
+      }
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('error', 'Error', 'Failed to load subject notes.');
+  }
+}
+
+function goBackToSubjects() {
+  document.getElementById('sec-subject-detail').style.display = 'none';
+  document.getElementById('sec-subjects').style.display = 'block';
+}
+
+function chipFilter(val, el){
+  document.querySelectorAll('.filter-chip[data-filter-group="cat"]').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  let q = '';
+  if(val !== 'all') {
+    const subjects = {ds:'Data Structures', dbms:'DBMS', os:'OS', cn:'Computer Networks', math:'Mathematics'};
+    if(subjects[val]) {
+      const sub = subjects[val].toLowerCase();
+      renderNotes('all-notes-grid', NOTES.filter(n => (n.subject && n.subject.toLowerCase().includes(sub.toLowerCase())) || (n.title.toLowerCase().includes(sub.toLowerCase()))));
+      return;
+    }
+  }
+  renderNotes('all-notes-grid', NOTES);
+}
+
+document.getElementById('main-search')?.addEventListener('input', (e) => {
+  const v = e.target.value.toLowerCase();
+  if(!v) { renderNotes('all-notes-grid', NOTES); return; }
+  const f = NOTES.filter(n => n.title.toLowerCase().includes(v) || (n.subject && n.subject.toLowerCase().includes(v)));
+  renderNotes('all-notes-grid', f);
+});
+
+let currentPreviewNote = null;
+
+async function previewNote(id){
+  // Find from NOTES array first; if not found (e.g. called from subject detail), fetch
+  let n = NOTES.find(x => x._id === id);
+  if(!n) {
+    try {
+      const res = await apiGet(`/notes/${id}`);
+      if(res.success) n = res.data;
+    } catch(e) { console.error(e); }
+  }
+  if(!n) return;
+
+  currentPreviewNote = n;
+  document.getElementById('preview-title').textContent = n.title;
+
+  const url = `${API}/notes/${id}/preview`;
+  const token = sessionStorage.getItem('nb_token');
+  const container = document.getElementById('preview-container');
+
+  const fileType = (n.fileType || '').toUpperCase();
+
+  if (fileType === 'IMAGE') {
+    // Fetch image as blob to avoid cross-origin iframe issues
+    try {
+      const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if(resp.ok) {
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        container.innerHTML = `<img src="${objUrl}" class="preview-img" alt="${n.title}" />`;
+      } else {
+        container.innerHTML = `<div class="preview-unsupported"><div class="preview-icon">🖼️</div><div>Could not load image preview.</div></div>`;
+      }
+    } catch(e) {
+      container.innerHTML = `<div class="preview-unsupported"><div class="preview-icon">🖼️</div><div>Preview unavailable.</div></div>`;
+    }
+  } else if (fileType === 'PDF') {
+    // PDF — use an object/embed tag with auth token fetched as blob URL
+    try {
+      const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if(resp.ok) {
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        container.innerHTML = `<object data="${objUrl}" type="application/pdf" class="preview-embed"><p style="padding:1rem;">PDF preview not supported in your browser. <a href="${objUrl}" target="_blank">Open in new tab</a></p></object>`;
+      } else {
+        container.innerHTML = `<div class="preview-unsupported"><div class="preview-icon">📄</div><div>Could not load PDF preview.</div></div>`;
+      }
+    } catch(e) {
+      container.innerHTML = `<div class="preview-unsupported"><div class="preview-icon">📄</div><div>Preview unavailable.</div></div>`;
+    }
+  } else {
+    container.innerHTML = `<div class="preview-unsupported"><div class="preview-icon">${n.fileType==='PPT'?'📊':n.fileType==='DOC'?'📝':'📦'}</div><div><strong>${n.title}</strong></div><div>Direct preview not available for ${n.fileType||'this file type'}.</div><div style="margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="downloadCurrentNote()">⬇ Download to View</button></div></div>`;
+  }
+
+  apiPost(`/notes/${id}/view`);
+  openModal('modal-preview');
+}
+
+function downloadCurrentNote() {
+  if(!currentPreviewNote) return;
+  downloadNote(currentPreviewNote._id, currentPreviewNote.title);
+}
+
+async function downloadNote(id, title) {
+  showToast('info', 'Download started!', `Downloading "${title}"…`);
+  try {
+    const res = await fetch(`${API}/notes/${id}/download`, {
+      headers: { 'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}` }
+    });
+    if(res.ok) {
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      // Try to get filename from Content-Disposition header
+      const cd = res.headers.get('Content-Disposition');
+      const match = cd && cd.match(/filename="?([^"]+)"?/);
+      a.download = match ? match[1] : title;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('success', 'Downloaded!', `"${title}" saved successfully.`);
+      // Increment download counter in local array
+      const n = NOTES.find(x => x._id === id);
+      if(n) n.downloads = (n.downloads || 0) + 1;
+    } else {
+      showToast('error', 'Download failed', 'File could not be downloaded.');
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('error', 'Download error', 'An error occurred while downloading.');
+  }
+}
+
+async function toggleBM(btn, id){
+  const on = btn.style.color === 'var(--warning)';
+  btn.style.color = on ? '' : 'var(--warning)';
+  btn.classList.toggle('btn-bookmark-active');
+  try {
+    const res = await apiPost(`/bookmarks/${id}`);
+    showToast(res.bookmarked ? 'success' : 'info', res.bookmarked ? '⭐ Bookmarked!' : 'Bookmark removed', '');
+    loadBookmarks(); 
+  } catch(e) { console.error(e); }
+}
+
+function toggleBookmarkModal(){ showToast('success','⭐ Bookmarked!','Added to your saved notes.'); }
+
+function showSection(id, el){
+  ['sec-home','sec-notes','sec-bookmarks','sec-doubts','sec-profile','sec-settings','sec-subject-detail'].forEach(s=>{
+    const e = document.getElementById(s); if(e) e.style.display='none';
+  });
+  // Also hide subjects sub-section when going away from home
+  const subjectsEl = document.getElementById('sec-subjects');
+
+  const sec = document.getElementById(id); if(sec) sec.style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+
+  // Show subjects grid when on home
+  if(id === 'sec-home') {
+    if(subjectsEl) subjectsEl.style.display = 'block';
+  } else {
+    if(subjectsEl) subjectsEl.style.display = 'none';
+  }
+
+  if(id==='sec-notes') { loadNotes().then(()=>loadBookmarks()); }
+  if(id==='sec-bookmarks') loadBookmarks();
+}
+
+document.getElementById('menu-toggle')?.addEventListener('click',()=>document.getElementById('sidebar')?.classList.toggle('open'));
+document.getElementById('sidebar-overlay')?.addEventListener('click',()=>document.getElementById('sidebar')?.classList.remove('open'));
+
+init();
+</script>
+</body>
+</html>

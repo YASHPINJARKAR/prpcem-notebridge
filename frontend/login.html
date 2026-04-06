@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+  .brand-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .brand-icon img {
+    width: 200px;           /* bigger size */
+    height: 200px;
+    object-fit: cover;
+    border-radius: 50%;     /* makes circle */
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2); /* premium shadow */
+    background: transparent; /* no box */
+  }
+</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In – PRPCEM NOTES NoteBridge</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/animations.css"/>
+  <style>
+    body{display:flex;min-height:100vh;align-items:stretch;}
+    .login-wrap{display:flex;width:100%;min-height:100vh;}
+    /* Left */
+    .login-left{flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#EFF6FF,#EEF2FF,#F5F3FF);padding:3rem;position:relative;overflow:hidden;}
+    .lb1{position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(59,130,246,.15);top:-80px;right:-80px;filter:blur(60px);animation:blobPulse 10s ease-in-out infinite;}
+    .lb2{position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(99,102,241,.12);bottom:-60px;left:-60px;filter:blur(50px);animation:blobPulse 14s ease-in-out infinite reverse;}
+    .login-left-content{max-width:440px;text-align:center;position:relative;z-index:1;}
+    /* .brand-icon{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--accent));display:grid;place-items:center;font-size:1.75rem;font-weight:900;color:white;margin:0 auto 1.25rem;box-shadow:0 8px 32px rgba(59,130,246,.4);animation:float 6s ease-in-out infinite;} */
+    .brand-name{font-size:1.8rem;font-weight:900;margin-bottom:.5rem;}
+    .brand-tag{font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:340px;margin:0 auto 2rem;}
+    .feat-list{display:flex;flex-direction:column;gap:10px;text-align:left;}
+    .feat-item{display:flex;align-items:center;gap:12px;background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.8);border-radius:var(--radius-md);padding:12px 16px;}
+    .feat-item span{font-size:.875rem;font-weight:500;}
+    /* Right */
+    .login-right{width:480px;flex-shrink:0;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem;box-shadow:-8px 0 32px rgba(0,0,0,.06);}
+    .form-wrap{width:100%;max-width:380px;}
+    .greeting{font-size:1.6rem;font-weight:800;margin-bottom:.35rem;}
+    .subtext{font-size:.875rem;color:var(--text-secondary);margin-bottom:1.75rem;}
+    /* Role tabs */
+    .role-tabs{display:flex;gap:0;background:var(--gray-100);border-radius:var(--radius-lg);padding:4px;margin-bottom:1.75rem;}
+    .role-tab{flex:1;padding:9px 6px;text-align:center;border-radius:var(--radius-md);font-size:.78rem;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all var(--transition);display:flex;flex-direction:column;align-items:center;gap:2px;}
+    .role-tab .em{font-size:1.1rem;}
+    .role-tab.active{background:white;box-shadow:var(--shadow-sm);}
+    .role-tab.active.student{color:var(--primary);}
+    .role-tab.active.teacher{color:var(--accent);}
+    .role-tab.active.admin{color:var(--success);}
+    /* Mode */
+    .mode-toggle{display:flex;background:var(--gray-100);border-radius:var(--radius-full);padding:3px;margin-bottom:1.5rem;}
+    .mode-btn{flex:1;padding:8px;border-radius:var(--radius-full);font-size:.83rem;font-weight:600;color:var(--text-muted);cursor:pointer;text-align:center;transition:all var(--transition);}
+    .mode-btn.active{background:white;color:var(--text-primary);box-shadow:var(--shadow-xs);}
+    .form-fields{display:flex;flex-direction:column;gap:13px;}
+    .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .divider-or{display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:.78rem;margin:.75rem 0;}
+    .divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--border);}
+    .social-btn{width:100%;padding:11px;border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:.875rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all var(--transition);background:white;}
+    .social-btn:hover{border-color:var(--primary);background:var(--primary-light);}
+    .forgot-link{font-size:.78rem;color:var(--primary);font-weight:600;float:right;}
+    .terms{font-size:.75rem;color:var(--text-muted);text-align:center;margin-top:.75rem;}
+    .terms a{color:var(--primary);font-weight:600;}
+    .email-box{display:none;background:var(--success-light);border:1.5px solid var(--success);border-radius:var(--radius-md);padding:14px;gap:10px;align-items:flex-start;margin-top:.75rem;animation:fadeInUp .4s ease;}
+    .email-box.show{display:flex;}
+    @media(max-width:880px){.login-left{display:none;}.login-right{width:100%;}}
+    @media(max-width:480px){.login-right{padding:2rem 1.5rem;}.form-row2{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="page-content" style="width:100%;display:flex;">
+<div class="login-wrap">
+
+  <!-- Left -->
+  <div class="login-left">
+    <div class="lb1"></div><div class="lb2"></div>
+    <div class="login-left-content animate-fadeInLeft">
+     <div class="brand-icon">
+    <img src="images/logo.png" alt="College Logo">
+</div>
+
+      <div class="brand-name">PRPCEM <span class="gradient-text">NoteBridge</span></div>
+      <p class="brand-tag">The smart notes sharing platform connecting teachers &amp; students at PRPCEM.</p>
+      <!-- <div class="feat-list">
+        <div class="feat-item delay-100 animate-fadeInLeft">📚 <span>2,450+ notes across 38 subjects</span></div>
+        <div class="feat-item delay-200 animate-fadeInLeft">⚡ <span>Instant preview — no download needed</span></div>
+        <div class="feat-item delay-300 animate-fadeInLeft">🔔 <span>Real-time notifications for new uploads</span></div>
+        <div class="feat-item delay-400 animate-fadeInLeft">🤖 <span>NoteBot AI assistant available 24/7</span></div>
+      </div> -->
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="login-right">
+    <div class="form-wrap animate-fadeInRight">
+      <p class="greeting" id="greeting">Welcome back 👋</p>
+      <p class="subtext">Sign in to your NoteBridge account</p>
+
+      <div class="role-tabs">
+        <div class="role-tab student active" onclick="setRole('student',this)"><span class="em">👨‍🎓</span>Student</div>
+        <div class="role-tab teacher" onclick="setRole('teacher',this)"><span class="em">👩‍🏫</span>Teacher</div>
+        <div class="role-tab admin" onclick="setRole('admin',this)"><span class="em">🛠️</span>Admin</div>
+      </div>
+
+      <div class="mode-toggle">
+        <div class="mode-btn active" id="btn-login" onclick="setMode('login')">Sign In</div>
+        <div class="mode-btn" id="btn-reg" onclick="setMode('register')">Register</div>
+      </div>
+
+      <!-- Login -->
+      <div id="f-login" class="form-fields">
+        <div class="input-group">
+          <label id="l-uid-label">College Email</label>
+          <div class="input-icon-wrap"><span class="input-icon" id="l-uid-icon">✉️</span>
+            <input id="l-uid" type="text" class="input" placeholder="you@prpcem.edu.in"/>
+          </div>
+          <label>Password <a href="#" class="forgot-link">Forgot?</a></label>
+          <div class="input-icon-wrap"><span class="input-icon">🔒</span>
+            <input id="l-pass" type="password" class="input" placeholder="Enter password"/>
+          </div>
+        </div>
+        <button id="login-btn" class="btn btn-primary w-full btn-lg" onclick="doLogin()" style="margin-top:4px;">Sign In →</button>
+        <!-- <div class="divider-or">or</div> -->
+        <!-- <button class="social-btn">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="G"/> Sign in with Google
+        </button> -->
+        <div class="email-box" id="email-box">
+          <span style="font-size:1.4rem;">📧</span>
+          <div><div style="font-weight:700;color:var(--success);font-size:.875rem;">Welcome email sent!</div>
+          <div style="font-size:.78rem;color:var(--gray-600);margin-top:2px;">Account created for <strong id="conf-email"></strong>. Awaiting admin approval.</div></div>
+        </div>
+      </div>
+
+      <!-- Register -->
+      <div id="f-reg" class="form-fields" style="display:none;max-height:450px;overflow-y:auto;padding-right:8px;">
+        <div class="input-group"><label>Full Name</label><input id="r-fullname" type="text" class="input" placeholder="Raghav Sharma"/></div>
+        
+        <div class="input-group">
+          <label>Email ID</label>
+          <div class="input-icon-wrap"><span class="input-icon">✉️</span>
+            <input id="r-email" type="email" class="input" placeholder="name@gmail.com"/>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Phone No</label>
+          <div class="input-icon-wrap"><span class="input-icon">📞</span>
+            <input id="r-phone" type="text" class="input" placeholder="Your mobile number"/>
+          </div>
+        </div>
+        <div id="student-only-fields">
+          <div class="form-row2">
+            <div class="input-group"><label>Roll Number</label><input id="r-roll" type="text" class="input" placeholder="AIDSU24001"/></div>
+            <div class="input-group"><label>Enrolment No</label><input id="r-enrolment" type="text" class="input" placeholder="24010222026"/></div>
+          </div>
+          <div class="form-row2">
+            <div class="input-group">
+              <label>Branch</label>
+              <select id="r-branch" class="select">
+                <option>AI&DS</option>
+                <option>CSE</option>
+                <!-- <option>IT</option> -->
+                <option>EXTC</option>
+                <option>MECH</option>
+                <option>CIVIL</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Year</label>
+              <select id="r-year" class="select">
+                <option>1st Year</option>
+                <option>2nd Year</option>
+                <option>3rd Year</option>
+                <option>4th Year</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Section</label>
+            <select id="r-section" class="select">
+              <option>B1</option>
+              <option>B2</option>
+              <option>B3</option>
+              <!-- <option>B4</option>
+              <option>A1</option>
+              <option>A2</option> -->
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row2">
+          <div class="input-group">
+            <label>Password</label>
+            <div class="input-icon-wrap"><span class="input-icon">🔒</span>
+              <input id="r-pass" type="password" class="input" placeholder="Min 6 chars"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Confirm Password</label>
+            <div class="input-icon-wrap"><span class="input-icon">🔒</span>
+              <input id="r-pass2" type="password" class="input" placeholder="Confirm"/>
+            </div>
+          </div>
+        </div>
+        <button id="reg-btn" class="btn btn-gradient w-full btn-lg" onclick="doRegister()">Create Account →</button>
+        <p class="terms">By registering you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></p>
+      </div>
+
+      <!-- Forgot Password inline panel -->
+      <div id="forgot-panel" style="display:none;background:var(--primary-light);border:1.5px solid var(--primary);border-radius:var(--radius-md);padding:14px;margin-top:.75rem;animation:fadeInUp .3s ease;">
+        <div style="font-weight:700;font-size:.875rem;color:var(--primary);margin-bottom:6px;">🔐 Forgot Password</div>
+        <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:10px;">Enter your email — we'll send a temporary password to it instantly.</div>
+        <div style="display:flex;gap:8px;">
+          <input id="forgot-email" type="email" class="input" placeholder="your@email.com" style="flex:1;font-size:.83rem;padding:9px 12px;"/>
+          <button id="forgot-btn" class="btn btn-primary btn-sm" onclick="doForgotPassword()">Send 📧</button>
+        </div>
+        <div id="forgot-msg" style="font-size:.78rem;margin-top:8px;display:none;padding:6px 10px;border-radius:6px;"></div>
+      </div>
+
+      <!-- <p style="text-align:center;margin-top:1.5rem;font-size:.8rem;"><a href="index.html" style="color:var(--text-muted);">← Back to Home</a></p> -->
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="js/background.js"></script>
+<script>
+  const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://notebridge-backend.onrender.com/api';
+  let role = 'student';
+
+  function showErr(msg) {
+    let el = document.getElementById('err-msg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'err-msg';
+      el.style.cssText = 'background:#FEE2E2;border:1.5px solid #EF4444;color:#B91C1C;border-radius:10px;padding:10px 14px;font-size:.83rem;font-weight:600;margin-top:8px;animation:fadeInUp .3s ease';
+      document.getElementById('f-login').appendChild(el);
+    }
+    el.textContent = msg;
+    setTimeout(() => el.remove(), 6000);
+  }
+
+  function setBtn(id, text, disabled) {
+    const btn = document.getElementById(id);
+    if (btn) { btn.textContent = text; btn.disabled = disabled; }
+  }
+
+  async function apiPost(endpoint, body) {
+    const res = await fetch(`${API}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
+  function setRole(r, el) {
+    role = r;
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    
+    // Hide Register button for Admin
+    const regBtn = document.getElementById('btn-reg');
+    if (r === 'admin') {
+      regBtn.style.display = 'none';
+      setMode('login'); // Force login mode for admin
+    } else {
+      regBtn.style.display = 'block';
+    }
+
+    const sFields = document.getElementById('student-only-fields');
+    if (sFields) sFields.style.display = r === 'student' ? 'block' : 'none';
+
+    const loginUidLabel = document.getElementById('l-uid-label');
+    const loginUidIcon = document.getElementById('l-uid-icon');
+    const loginUid = document.getElementById('l-uid');
+    
+    if (r === 'student') {
+      loginUidLabel.textContent = 'Roll Number';
+      loginUidIcon.textContent = '🎓';
+      loginUid.placeholder = 'AIDSU24001';
+      loginUid.type = 'text';
+    } else {
+      loginUidLabel.textContent = 'Login Email';
+      loginUidIcon.textContent = '✉️';
+      loginUid.placeholder = 'you@prpcem.edu.in';
+      loginUid.type = 'email';
+    }
+  }
+
+  function setMode(m) {
+    document.getElementById('f-login').style.cssText = `display:${m==='login'?'flex':'none'};flex-direction:column`;
+    document.getElementById('f-reg').style.cssText   = `display:${m==='register'?'flex':'none'};flex-direction:column`;
+    document.getElementById('btn-login').classList.toggle('active', m === 'login');
+    document.getElementById('btn-reg').classList.toggle('active',   m === 'register');
+    document.getElementById('greeting').textContent = m === 'login' ? 'Welcome back 👋' : 'Join NoteBridge 🎓';
+    document.getElementById('forgot-panel').style.display = 'none';
+  }
+
+  async function doLogin() {
+    const uid = document.getElementById('l-uid').value.trim();
+    const pass = document.getElementById('l-pass').value;
+    if (!uid || !pass) { showErr('Please enter your credentials.'); return; }
+    setBtn('login-btn', '⏳ Signing in…', true);
+    
+    const payload = { password: pass, role: role };
+    if (role === 'student') payload.rollNumber = uid;
+    else payload.email = uid;
+
+    try {
+      const data = await apiPost('/auth/login', payload);
+      if (!data.success) {
+        showErr(data.code === 'PENDING'
+          ? '⏳ Your account is pending admin approval. Please wait.'
+          : (data.message || 'Invalid email or password.'));
+        setBtn('login-btn', 'Sign In →', false);
+        return;
+      }
+      sessionStorage.setItem('nb_token', data.token);
+      sessionStorage.setItem('nb_user',  JSON.stringify(data.user));
+      setBtn('login-btn', '✅ Redirecting…', true);
+      const routes = { student: 'student/dashboard.html', teacher: 'teacher/dashboard.html', admin: 'admin/dashboard.html' };
+      setTimeout(() => { window.location.href = routes[data.user.role] || 'student/dashboard.html'; }, 500);
+    } catch (err) {
+      showErr('❌ Cannot connect to server. Make sure backend is running on port 5000.');
+      setBtn('login-btn', 'Sign In →', false);
+    }
+  }
+
+  async function doRegister() {
+    const fullName   = document.getElementById('r-fullname').value.trim();
+    const email      = document.getElementById('r-email').value.trim();
+    const phone      = document.getElementById('r-phone').value.trim();
+    const password   = document.getElementById('r-pass').value;
+    const confirmPass= document.getElementById('r-pass2').value;
+    
+    let branch = '', section = '', rollNumber = '', enrolmentNo = '', year = '';
+    
+    if (role === 'student') {
+      branch = document.getElementById('r-branch').value;
+      section = document.getElementById('r-section').value;
+      rollNumber = document.getElementById('r-roll').value.trim();
+      enrolmentNo = document.getElementById('r-enrolment').value.trim();
+      year = document.getElementById('r-year').value;
+    }
+
+    if (!fullName || !password) { alert('Please fill Full Name and Password.'); return; }
+    if (password !== confirmPass) { alert('Passwords do not match.'); return; }
+    if (password.length < 6) { alert('Password must be at least 6 characters.'); return; }
+    
+    // Split full name
+    const parts = fullName.split(' ');
+    const firstName = parts[0];
+    const lastName = parts.slice(1).join(' ') || ' ';
+
+    setBtn('reg-btn', '⏳ Creating account…', true);
+    try {
+      const data = await apiPost('/auth/register', { 
+        firstName, lastName, email, password, role, 
+        branch, section, rollNumber, enrolmentNo, year, phone 
+      });
+      if (!data.success) { alert(data.message || 'Registration failed.'); setBtn('reg-btn', 'Create Account →', false); return; }
+      
+      if(data.user.status === 'pending') {
+        // Change UI to sign in and show the success/pending message
+        setMode('login');
+        const box = document.getElementById('email-box');
+        if (box) {
+          box.classList.add('show');
+          const emailBold = document.getElementById('conf-email');
+          if (emailBold) emailBold.textContent = data.user.email;
+        }
+        setBtn('reg-btn', 'Create Account →', false);
+        // Clear registration form
+        document.getElementById('r-fullname').value = '';
+        document.getElementById('r-email').value = '';
+        document.getElementById('r-pass').value = '';
+        document.getElementById('r-pass2').value = '';
+      } else {
+        // Auto-login for active users (like admin)
+        sessionStorage.setItem('nb_token', data.token);
+        sessionStorage.setItem('nb_user',  JSON.stringify(data.user));
+        const routes = { teacher: 'teacher/dashboard.html', admin: 'admin/dashboard.html' };
+        window.location.href = routes[data.user.role] || 'student/dashboard.html';
+      }
+    } catch (err) {
+      alert('❌ Cannot connect to server. Make sure backend is running on port 5000.');
+      setBtn('reg-btn', 'Create Account →', false);
+    }
+  }
+
+  function showForgot(e) {
+    e.preventDefault();
+    const p = document.getElementById('forgot-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function doForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) { alert('Please enter your email.'); return; }
+    setBtn('forgot-btn', '⏳ Sending…', true);
+    const msgEl = document.getElementById('forgot-msg');
+    msgEl.style.display = 'block';
+    try {
+      const data = await apiPost('/auth/forgot-password', { email });
+      if (data.success) {
+        msgEl.style.background = 'var(--success-light)';
+        msgEl.style.color = '#065F46';
+        msgEl.innerHTML = '✅ ' + data.message;
+      } else {
+        msgEl.style.background = '#FEE2E2';
+        msgEl.style.color = '#B91C1C';
+        msgEl.innerHTML = '❌ ' + (data.message || 'Something went wrong.');
+      }
+    } catch (err) {
+      msgEl.style.background = '#FEE2E2'; msgEl.style.color = '#B91C1C';
+      msgEl.textContent = '❌ Cannot reach server. Is the backend running on port 5000?';
+    }
+    setBtn('forgot-btn', 'Send 📧', false);
+  }
+
+  // Wire forgot link
+  document.querySelector('.forgot-link')?.addEventListener('click', showForgot);
+
+  // URL role
+  const urlRole = new URLSearchParams(location.search).get('role');
+  if (urlRole) { const el = document.querySelector('.role-tab.' + urlRole); if (el) setRole(urlRole, el); }
+
+  // Already logged in? Redirect
+  try {
+    const u = JSON.parse(sessionStorage.getItem('nb_user') || 'null');
+    if (u && sessionStorage.getItem('nb_token')) {
+      const routes = { student: 'student/dashboard.html', teacher: 'teacher/dashboard.html', admin: 'admin/dashboard.html' };
+      if (u.role) window.location.href = routes[u.role];
+    }
+  } catch(e) { sessionStorage.clear(); }
+</script>
+</body>
+</html>

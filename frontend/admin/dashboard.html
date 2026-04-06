@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard – PRPCEM NoteBridge</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+  <link rel="stylesheet" href="../css/animations.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .approval-card{background:var(--glass);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.8);border-radius:var(--radius-lg);padding:1.25rem;display:flex;align-items:center;gap:14px;margin-bottom:.75rem;transition:all var(--transition);}
+    .approval-card:hover{box-shadow:var(--shadow-md);}
+    .system-metric{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border);}
+    .system-metric:last-child{border-bottom:none;}
+    .chart-wrap{position:relative;height:220px;}
+    .user-row-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:.75rem;font-weight:700;color:white;flex-shrink:0;}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="page-content dashboard-wrapper">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="../images/logo.png" class="sidebar-logo-img" alt="Logo">
+      <div><div class="sidebar-logo-text">NoteBridge</div><div class="sidebar-logo-sub">Admin Portal</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Admin Menu</div>
+      <div class="nav-item active" onclick="showSection('sec-overview',this)"><span class="nav-icon">🏠</span> Overview</div>
+      <div class="nav-item" onclick="showSection('sec-users',this)"><span class="nav-icon">👥</span> User Management</div>
+      <div class="nav-item" onclick="showSection('sec-notes',this)"><span class="nav-icon">📂</span> Notes Management</div>
+      <div class="nav-item" onclick="showSection('sec-approvals',this)"><span class="nav-icon">✅</span> Approvals<span class="nav-badge" id="sidebar-approvals-badge">6</span></div>
+      <!-- Analytics Link Removed -->
+      <div class="nav-item" onclick="showSection('sec-settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
+      <div class="nav-section-label">Account</div>
+      <div class="nav-item" onclick="sessionStorage.clear(); window.location.href='../login.html'"><span class="nav-icon">🚪</span> Sign Out</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar-placeholder avatar-md" style="border-radius:50%;background:linear-gradient(135deg,var(--success),#059669);font-size:.85rem;font-weight:700;color:white;width:40px;height:40px;display:grid;place-items:center;">AD</div>
+        <div><div class="user-name">Admin PRPCEM</div><div class="user-role">System Administrator</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main-content">
+    <header class="navbar">
+      <div class="navbar-left">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <!-- Search bar removed -->
+      </div>
+      <div class="navbar-right">
+        <span class="badge badge-success" style="font-size:.8rem;padding:6px 14px;">🟢 System Online</span>
+
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--success),#059669);font-size:.85rem;font-weight:700;color:white;display:grid;place-items:center;cursor:pointer;">AD</div>
+      </div>
+    </header>
+
+    <main class="page-body">
+
+      <!-- ── OVERVIEW ── -->
+      <div id="sec-overview">
+        <div class="page-header">
+          <div><div class="page-title">Admin Overview 🛠️</div><div class="page-subtitle">PRPCEM NoteBridge System Dashboard</div></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-gradient btn-sm" id="header-approvals-btn" onclick="showSection('sec-approvals',null)">✅ Pending Approvals (6)</button>
+          </div>
+        </div>
+
+        <div class="grid grid-3 gap-4" style="margin-bottom:2rem;">
+          <div class="stat-card blue animate-fadeInUp"><div class="stat-icon" style="background:var(--primary-light);">👥</div><div class="stat-value" id="total-users-sum">0</div><div class="stat-label">Total Users</div><div class="stat-change up">Students & Teachers</div></div>
+          <div class="stat-card green animate-fadeInUp delay-100"><div class="stat-icon" style="background:var(--success-light);">📂</div><div class="stat-value" id="total-notes-sum">0</div><div class="stat-label">Total Notes</div><div class="stat-change up">All uploaded notes</div></div>
+          <div class="stat-card red animate-fadeInUp delay-200"><div class="stat-icon" style="background:var(--danger-light);">⏳</div><div class="stat-value" id="total-pending-sum">0</div><div class="stat-label">Pending Approvals</div><div class="stat-change down">Needs action</div></div>
+        </div>
+
+
+
+        <!-- Quick Approvals -->
+        <div class="card-solid"><div class="card-header" style="display:flex;align-items:center;justify-content:space-between;"><strong>⏳ Pending Approvals</strong><button class="btn btn-ghost btn-sm" onclick="showSection('sec-approvals',null)">View All →</button></div>
+          <div style="padding:1rem;" id="quick-approvals"></div>
+        </div>
+      </div>
+
+      <!-- ── USER MANAGEMENT ── -->
+      <div id="sec-users" style="display:none;">
+        <div class="page-header"><div><div class="page-title">User Management 👥</div></div>
+        </div>
+        <div class="card-solid" style="margin-bottom:1.5rem;">
+
+          <div class="table-wrap"><table><thead><tr><th>User</th><th>Email</th><th>Role</th><th>Department</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="users-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── NOTES MANAGEMENT ── -->
+      <div id="sec-notes" style="display:none;">
+        <div class="page-header"><div><div class="page-title">Notes Management 📂</div></div></div>
+        <div class="card-solid">
+          <div class="table-wrap"><table><thead><tr><th>Title</th><th>Teacher</th><th>Subject</th><th>Type</th><th>Date</th><th>Views</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="admin-notes-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── APPROVALS ── -->
+      <div id="sec-approvals" style="display:none;">
+        <div class="page-header"><div><div class="page-title">Pending Approvals ✅</div><div class="page-subtitle" id="approvals-page-subtitle">6 items awaiting review</div></div></div>
+        <div class="tab-group" style="max-width:480px;margin-bottom:1.5rem;">
+          <div class="tab-btn active" onclick="switchApprovalTab('students',this)">👨‍🎓 Students (0)</div>
+          <div class="tab-btn" onclick="switchApprovalTab('teachers',this)">👩‍🏫 Teachers (0)</div>
+        </div>
+        <div id="approval-students-list" style="display:flex;flex-direction:column;gap:.75rem;"></div>
+        <div id="approval-teachers-list" style="display:none;flex-direction:column;gap:.75rem;"></div>
+        <div id="approval-notes-list" style="display:none;flex-direction:column;gap:.75rem;"></div>
+      </div>
+
+      <!-- ── ANALYTICS ── -->
+      <div id="sec-analytics" style="display:none;">
+        <div class="page-header"><div><div class="page-title">System Analytics 📊</div><div class="page-subtitle">Platform-wide performance metrics</div></div>
+          <button class="btn btn-outline btn-sm" onclick="showToast('info','Exporting…','PDF report generating.')">📥 Export PDF</button>
+        </div>
+        <div class="grid grid-4 gap-4" style="margin-bottom:2rem;">
+          <div class="stat-card blue"><div class="stat-icon" style="background:var(--primary-light);">👁</div><div class="stat-value" data-count="84500">0</div><div class="stat-label">Total Page Views</div></div>
+          <div class="stat-card green"><div class="stat-icon" style="background:var(--success-light);">⬇️</div><div class="stat-value" data-count="32800">0</div><div class="stat-label">Total Downloads</div></div>
+          <div class="stat-card yellow"><div class="stat-icon" style="background:var(--warning-light);">⭐</div><div class="stat-value" data-count="8920">0</div><div class="stat-label">Total Bookmarks</div></div>
+          <div class="stat-card purple"><div class="stat-icon" style="background:var(--purple-light);">💬</div><div class="stat-value" data-count="4280">0</div><div class="stat-label">Comments Posted</div></div>
+        </div>
+        <div class="grid grid-2 gap-4" style="margin-bottom:2rem;">
+          <div class="card-solid"><div class="card-header"><strong>📈 User Growth (2025–2026)</strong></div>
+            <div class="card-body"><div class="chart-wrap" style="height:250px;"><canvas id="admin-growth-chart"></canvas></div></div>
+          </div>
+          <div class="card-solid"><div class="card-header"><strong>🍩 Notes by Department</strong></div>
+            <div class="card-body"><div class="chart-wrap" style="height:250px;"><canvas id="admin-dept-chart"></canvas></div></div>
+          </div>
+        </div>
+        <div class="card-solid"><div class="card-header"><strong>📋 Top Teachers by Engagement</strong></div>
+          <div class="table-wrap"><table><thead><tr><th>Teacher</th><th>Dept</th><th>Notes</th><th>Total Views</th><th>Downloads</th><th>Avg Rating</th></tr></thead>
+          <tbody id="teacher-stats-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS ── -->
+      <div id="sec-settings" style="display:none;">
+        <div class="page-header"><div><div class="page-title">System Settings ⚙️</div><div class="page-subtitle">Configure platform behavior</div></div></div>
+        <div class="grid grid-2 gap-4">
+          <div class="card-solid"><div class="card-header"><strong>🔐 Authentication</strong></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div class="input-group"><label>Allowed Email Domain</label><input type="text" class="input" value="@prpcem.edu.in"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Require Email Verification</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Auto-approve Teachers</span><input type="checkbox" style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Allow Google OAuth</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <button class="btn btn-primary btn-sm" onclick="showToast('success','Settings saved!','')">Save Changes</button>
+            </div>
+          </div>
+          <div class="card-solid"><div class="card-header"><strong>📂 Storage & Upload</strong></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div class="input-group"><label>Max File Size (MB)</label><input type="number" class="input" value="50"/></div>
+              <div class="input-group"><label>Allowed File Types</label><input type="text" class="input" value="pdf, ppt, pptx, doc, docx, jpg, png, zip"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Require Admin Approval for Notes</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Enable Virus Scanning</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <button class="btn btn-primary btn-sm" onclick="showToast('success','Settings saved!','')">Save Changes</button>
+            </div>
+          </div>
+          <div class="card-solid"><div class="card-header"><strong>🔔 Notifications</strong></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Email on new upload</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Email digest (weekly)</span><input type="checkbox" checked style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;font-weight:500;">Push notifications</span><input type="checkbox" style="width:18px;height:18px;cursor:pointer;"/></div>
+              <div class="input-group"><label>SMTP Server</label><input type="text" class="input" value="smtp.prpcem.edu.in"/></div>
+              <button class="btn btn-primary btn-sm" onclick="showToast('success','Notification settings saved!','')">Save Changes</button>
+            </div>
+          </div>
+          <div class="card-solid"><div class="card-header"><strong>🗄️ Backup & Maintenance</strong></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;">Last Backup</span><span class="badge badge-success">Apr 4, 2026 · 02:00 AM</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:.875rem;">Auto Backup</span><span class="badge badge-primary">Daily</span></div>
+              <button class="btn btn-outline btn-sm" onclick="showToast('info','Backup started','This may take a few minutes.')">🗄️ Backup Now</button>
+              <button class="btn btn-ghost btn-sm" onclick="showToast('warning','Maintenance mode','Only admins can access the platform.')">🔧 Enable Maintenance Mode</button>
+              <button class="btn btn-danger btn-sm" onclick="confirm('Clear all cached data?')&&showToast('success','Cache cleared','')">🗑️ Clear Cache</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Chatbot -->
+<div class="chatbot-fab" id="chatbot-fab">🤖</div>
+<div class="chatbot-window" id="chatbot-window">
+  <div class="chatbot-header"><div class="chatbot-avatar">🤖</div><div><div class="chatbot-name">AdminBot</div><div class="chatbot-status">🟢 Online</div></div><button id="chatbot-close" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem;display:grid;place-items:center;">✕</button></div>
+  <div class="chatbot-body" id="chatbot-body"></div>
+  <div class="chatbot-input-wrap"><input id="chatbot-input" class="chatbot-input" placeholder="Ask AdminBot…"/><button class="btn btn-primary btn-icon" id="chatbot-send">➤</button></div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="../js/background.js"></script>
+<script src="../js/notifications.js"></script>
+<script src="../js/chatbot.js"></script>
+<script src="../js/app.js"></script>
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://notebridge-backend.onrender.com/api';
+let USERS = [];
+let ADMIN_NOTES = [];
+let currentUser = null;
+
+async function apiGet(endpoint) {
+  const res = await fetch(`${API}${endpoint}`, {
+    headers: { 'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}` },
+  });
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  return res.json();
+}
+
+async function apiPost(endpoint, body = {}) {
+  const res = await fetch(`${API}${endpoint}`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}`
+    },
+    body: JSON.stringify(body),
+  });
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  return res.json();
+}
+
+async function apiPut(endpoint, body = {}) {
+  const res = await fetch(`${API}${endpoint}`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}`
+    },
+    body: JSON.stringify(body),
+  });
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  return res.json();
+}
+
+async function init() {
+  const token = sessionStorage.getItem('nb_token');
+  const userStr = sessionStorage.getItem('nb_user');
+  if(!token || !userStr) { window.location.href = '../login.html'; return; }
+  
+  try {
+    currentUser = JSON.parse(userStr);
+    if(currentUser.role !== 'admin') { window.location.href = '../login.html'; return; }
+    
+    // Update UI with user info
+    const initName = (currentUser.firstName[0] + currentUser.lastName[0]).toUpperCase();
+    document.querySelectorAll('.avatar-placeholder').forEach(el => el.textContent = initName);
+    document.querySelectorAll('.user-name').forEach(el => el.textContent = `${currentUser.firstName} ${currentUser.lastName}`);
+
+    await loadAdminData();
+  } catch(e) { console.error(e); }
+}
+
+async function loadAdminData() {
+  try {
+    const p1 = apiGet('/admin/users');
+    const p2 = apiGet('/notes');
+    const [resUsers, resNotes] = await Promise.all([p1, p2]);
+    if(resUsers.success) USERS = resUsers.data;
+    if(resNotes.success) ADMIN_NOTES = resNotes.data;
+
+    // Stat counts
+    const totalStudentsTeachers = USERS.filter(u => u.role === 'student' || u.role === 'teacher').length;
+    const elUsers = document.getElementById('total-users-sum'); 
+    if(elUsers) elUsers.textContent = totalStudentsTeachers.toLocaleString();
+
+    const totalNotes = ADMIN_NOTES.length;
+    const elNotes = document.getElementById('total-notes-sum'); 
+    if(elNotes) elNotes.textContent = totalNotes.toLocaleString();
+
+    const pendingCount = USERS.filter(u=>u.status==='pending').length + ADMIN_NOTES.filter(n=>n.status==='pending').length;
+    const elPending = document.getElementById('total-pending-sum'); 
+    if(elPending) elPending.textContent = pendingCount;
+
+    const sidebarBadge = document.getElementById('sidebar-approvals-badge');
+    if(sidebarBadge) sidebarBadge.textContent = pendingCount;
+    
+    const headerBtn = document.getElementById('header-approvals-btn');
+    if(headerBtn) headerBtn.textContent = `✅ Pending Approvals (${pendingCount})`;
+
+    const approvalsSubtitle = document.getElementById('approvals-page-subtitle');
+    if(approvalsSubtitle) approvalsSubtitle.textContent = `${pendingCount} items awaiting review`;
+
+    renderQuickApprovals();
+  } catch(e) { console.error('Admin Load Error', e); }
+}
+
+function formatDate(dStr) { return new Date(dStr).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}); }
+
+const roleBadge=r=>{
+  const rn = r.toLowerCase();
+  return rn==='teacher'?'<span class="badge badge-accent">👩‍🏫 Teacher</span>':rn==='admin'?'<span class="badge badge-success">🛠 Admin</span>':'<span class="badge badge-primary">👨‍🎓 Student</span>';
+};
+const statusBadge=s=>s==='active'?'<span class="badge badge-success">🟢 Active</span>':s==='pending'?'<span class="badge badge-warning">⏳ Pending</span>':s==='banned'?'<span class="badge badge-danger">🔴 Banned</span>':'<span class="badge badge-danger">⬇️ Unknown</span>';
+const noteStatus=s=>s==='approved'?'<span class="badge badge-success">✅ Approved</span>':s==='pending'?'<span class="badge badge-warning">⏳ Pending</span>':'<span class="badge badge-danger">❌ Rejected</span>';
+
+function getInitials(first, last){ return ((first?.[0]||'') + (last?.[0]||'')).toUpperCase(); }
+const colors=['linear-gradient(135deg,#3B82F6,#6366F1)','linear-gradient(135deg,#10B981,#06B6D4)','linear-gradient(135deg,#8B5CF6,#6366F1)','linear-gradient(135deg,#F59E0B,#EF4444)','linear-gradient(135deg,#EC4899,#8B5CF6)'];
+
+function renderUsers(){
+  const tb = document.getElementById('users-table'); if(!tb) return;
+  if(USERS.length===0) { tb.innerHTML='<tr><td colspan="7">No users</td></tr>'; return; }
+  tb.innerHTML = USERS.map((u,i) => `<tr>
+    <td style="display:flex;align-items:center;gap:10px;">
+      <div class="user-row-avatar" style="background:${colors[i%colors.length]};">${getInitials(u.firstName, u.lastName)}</div>
+      <span style="font-weight:600;">${u.firstName} ${u.lastName}</span>
+    </td>
+    <td style="font-size:.8rem;color:var(--text-muted);">${u.email}</td>
+    <td>${roleBadge(u.role)}</td>
+    <td><span class="badge badge-gray">${u.department||'N/A'}</span></td>
+    <td style="font-size:.8rem;">${formatDate(u.createdAt)}</td>
+    <td>${statusBadge(u.status)}</td>
+    <td class="table-actions">
+      ${u.status==='pending' ? `<button class="btn btn-success btn-sm" onclick="approveUser('${u._id}', '${u.firstName}')">✅ Approve</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u._id}', '${u.firstName}')">❌ Ban</button>` : `<button class="btn btn-ghost btn-sm" onclick="showToast('info','Viewing','${u.firstName}')">👁</button><button class="btn btn-danger btn-sm" onclick="rejectUser('${u._id}', '${u.firstName}')">🚫</button>`}
+    </td>
+  </tr>`).join('');
+}
+
+function renderAdminNotes(){
+  const tb = document.getElementById('admin-notes-table'); if(!tb) return;
+  if(ADMIN_NOTES.length === 0) { tb.innerHTML='<tr><td colspan="8">No notes</td></tr>'; return; }
+  tb.innerHTML = ADMIN_NOTES.map(n => `<tr>
+    <td style="font-weight:600;">${n.title}</td>
+    <td>${n.uploadedBy ? n.uploadedBy.firstName : 'Admin'}</td>
+    <td><span class="badge badge-gray">${n.subject}</span></td>
+    <td><span class="file-type-badge file-pdf">${n.fileType||'PDF'}</span></td>
+    <td>${formatDate(n.createdAt)}</td>
+    <td>${n.views||0}</td>
+    <td>${noteStatus(n.status)}</td>
+    <td class="table-actions">
+      ${n.status==='pending' ? `<button class="btn btn-success btn-sm" onclick="approveNote('${n._id}', '${n.title.replace(/'/g,"")}')">✅</button><button class="btn btn-danger btn-sm" onclick="rejectNote('${n._id}')">❌</button>` : `<button class="btn btn-ghost btn-sm" onclick="showToast('info','Preview','Opening...')">👁</button><button class="btn btn-danger btn-sm" onclick="showToast('warning','Note removed','')">🗑</button>`}
+    </td>
+  </tr>`).join('');
+}
+
+function renderApprovals(){
+  const ps = USERS.filter(u=>u.status==='pending' && u.role === 'student');
+  const pt = USERS.filter(u=>u.status==='pending' && u.role === 'teacher');
+  const pn = ADMIN_NOTES.filter(n=>n.status==='pending');
+
+  const sa = document.getElementById('approval-students-list');
+  if(sa) sa.innerHTML = ps.map((u,i) => `
+    <div class="approval-card" id="au-${u._id}">
+      <div style="width:42px;height:42px;border-radius:50%;background:${colors[i%colors.length]};display:grid;place-items:center;font-weight:700;color:white;font-size:.875rem;flex-shrink:0;">${getInitials(u.firstName, u.lastName)}</div>
+      <div style="flex:1"><div style="font-weight:700;">${u.firstName} ${u.lastName}</div><div style="font-size:.78rem;color:var(--text-muted);">${u.email} · ${u.branch||'N/A'} · ${u.section||'N/A'}</div></div>
+      ${roleBadge(u.role)}
+      <button class="btn btn-success btn-sm" onclick="approveUser('${u._id}', '${u.firstName}')">✅ Approve</button>
+      <button class="btn btn-danger btn-sm" onclick="rejectUser('${u._id}', '${u.firstName}')">❌ Reject</button>
+    </div>`).join('');
+
+  const ta = document.getElementById('approval-teachers-list');
+  if(ta) ta.innerHTML = pt.map((u,i) => `
+    <div class="approval-card" id="au-${u._id}">
+      <div style="width:42px;height:42px;border-radius:50%;background:${colors[(i+2)%colors.length]};display:grid;place-items:center;font-weight:700;color:white;font-size:.875rem;flex-shrink:0;">${getInitials(u.firstName, u.lastName)}</div>
+      <div style="flex:1"><div style="font-weight:700;">${u.firstName} ${u.lastName}</div><div style="font-size:.78rem;color:var(--text-muted);">${u.email} · ${u.department||'N/A'}</div></div>
+      ${roleBadge(u.role)}
+      <button class="btn btn-success btn-sm" onclick="approveUser('${u._id}', '${u.firstName}')">✅ Approve</button>
+      <button class="btn btn-danger btn-sm" onclick="rejectUser('${u._id}', '${u.firstName}')">❌ Reject</button>
+    </div>`).join('');
+
+  const na = document.getElementById('approval-notes-list');
+  if(na) na.innerHTML = pn.map((n,i) => `
+    <div class="approval-card" id="an-${n._id}">
+      <span style="font-size:1.75rem;">📄</span>
+      <div style="flex:1"><div style="font-weight:700;">${n.title}</div><div style="font-size:.78rem;color:var(--text-muted);">${n.uploadedBy?.firstName} · ${n.subject} · ${n.fileType||'PDF'}</div></div>
+      <button class="btn btn-success btn-sm" onclick="approveNote('${n._id}', '${n.title.replace(/'/g,"")}')">✅ Approve</button>
+      <button class="btn btn-danger btn-sm" onclick="rejectNote('${n._id}')">❌ Reject</button>
+    </div>`).join('');
+    
+  document.querySelector('.tab-btn[onclick*="students"]').innerHTML= `👨‍🎓 Students (${ps.length})`;
+  document.querySelector('.tab-btn[onclick*="teachers"]').innerHTML= `👩‍🏫 Teachers (${pt.length})`;
+}
+
+function renderQuickApprovals(){
+  const pu = USERS.filter(u=>u.status==='pending');
+  const el = document.getElementById('quick-approvals'); if(!el) return;
+  el.innerHTML = pu.slice(0,2).map((u,i) => `
+    <div class="approval-card" id="qau-${u._id}">
+      <div style="width:38px;height:38px;border-radius:50%;background:${colors[i%colors.length]};display:grid;place-items:center;font-weight:700;color:white;font-size:.8rem;flex-shrink:0;">${getInitials(u.firstName, u.lastName)}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:.875rem;">${u.firstName} ${u.lastName}</div><div style="font-size:.75rem;color:var(--text-muted);">${u.role} · ${u.department||'N/A'}</div></div>
+      <button class="btn btn-success btn-sm" onclick="approveUser('${u._id}', '${u.firstName}')">✅</button>
+      <button class="btn btn-danger btn-sm" onclick="rejectUser('${u._id}', '${u.firstName}')">❌</button>
+    </div>`).join('') + `<p style="font-size:.8rem;color:var(--text-muted);padding-top:.5rem;">+ ${Math.max(0, pu.length - 2)} more pending <a href="#" onclick="showSection('sec-approvals',null)" style="color:var(--primary);font-weight:600;">View all →</a></p>`;
+}
+
+async function approveUser(id, name) {
+  try {
+    const res = await apiPut(`/admin/users/${id}/approve`);
+    if(res.success) { showToast('success', 'User Approved', `${name} can now login.`); await loadAdminData(); renderUsers(); renderApprovals(); }
+    else showToast('error', 'Error', res.message || 'Approval failed');
+  } catch(e) { console.error(e); }
+}
+
+async function rejectUser(id, name) {
+  try {
+    const res = await apiPut(`/admin/users/${id}/reject`);
+    if(res.success) { showToast('error', 'User Suspended/Rejected', `${name} was rejected.`); await loadAdminData(); renderUsers(); renderApprovals(); }
+    else showToast('error', 'Error', res.message || 'Rejection failed');
+  } catch(e) { console.error(e); }
+}
+
+async function approveNote(id, title) {
+  try {
+    const res = await apiPut(`/admin/notes/${id}/approve`);
+    if(res.success) { showToast('success', 'Note Approved', `"${title}" is public.`); await loadAdminData(); renderAdminNotes(); renderApprovals(); }
+    else showToast('error', 'Error', res.message || 'Approval failed');
+  } catch(e) { console.error(e); }
+}
+
+async function rejectNote(id) {
+  try {
+    const res = await apiPut(`/admin/notes/${id}/reject`, { reason: "Does not meet content guidelines." });
+    if(res.success) { showToast('error', 'Note Rejected', `Note was rejected.`); await loadAdminData(); renderAdminNotes(); renderApprovals(); }
+    else showToast('error', 'Error', res.message || 'Rejection failed');
+  } catch(e) { console.error(e); }
+}
+
+function switchApprovalTab(tab, el){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active');
+  document.getElementById('approval-students-list').style.display=tab==='students'?'flex':'none';
+  document.getElementById('approval-teachers-list').style.display=tab==='teachers'?'flex':'none';
+  document.getElementById('approval-notes-list').style.display=tab==='notes'?'flex':'none';
+}
+
+function showSection(id, el){
+  ['sec-overview','sec-users','sec-notes','sec-approvals','sec-analytics','sec-settings'].forEach(s=>{
+    const e = document.getElementById(s); if(e) e.style.display='none';
+  });
+  const sec=document.getElementById(id); if(sec) sec.style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(id==='sec-users') renderUsers();
+  if(id==='sec-notes') renderAdminNotes();
+  if(id==='sec-approvals') renderApprovals();
+}
+
+
+
+document.getElementById('menu-toggle')?.addEventListener('click',()=>document.getElementById('sidebar')?.classList.toggle('open'));
+document.getElementById('sidebar-overlay')?.addEventListener('click',()=>document.getElementById('sidebar')?.classList.remove('open'));
+setTimeout(()=>{document.querySelectorAll('.fill[data-width]').forEach(b=>b.style.width=b.dataset.width);},700);
+
+init();
+</script>
+</body>
+</html>

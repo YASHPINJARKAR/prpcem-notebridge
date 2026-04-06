@@ -1,0 +1,32 @@
+# ============================================================
+# PRPCEM NoteBridge – .gitignore
+# ============================================================
+
+# Node dependencies
+backend/node_modules/
+node_modules/
+
+# Environment secrets – NEVER commit these
+backend/.env
+.env
+
+# Uploaded files (ephemeral on Render free tier)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
