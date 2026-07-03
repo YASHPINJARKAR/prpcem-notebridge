@@ -1,13 +1,13 @@
 # ============================================================
 # render.yaml — Render Deployment Configuration
-# PRPCEM NoteBridge Platform
+# PRPCEM NoteBridge Platform (Full-Stack React + Node.js)
 # ============================================================
-# This file defines BOTH services in one place.
-# Push to GitHub then connect on render.com → "New Blueprint"
+# Push to GitHub → connect on render.com → "New Blueprint"
+# Fill in all `sync: false` vars in the Render dashboard.
 
 services:
 
-  # ── 1. BACKEND (Web Service) ────────────────────────────────
+  # ── 1. BACKEND (Web Service: Node.js + Express) ─────────────
   - type: web
     name: notebridge-backend
     runtime: node
@@ -20,9 +20,9 @@ services:
         value: production
       - key: PORT
         value: 10000
-      # ⚠️ Set these SECRETLY in Render dashboard (do NOT put real values here)
+      # ⚠️ Set these SECRETLY in Render dashboard
       - key: MONGO_URI
-        sync: false          # Render will prompt you to fill this in
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRE
@@ -37,22 +37,34 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      # Cloudinary — set in dashboard
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
       - key: CLIENT_URL
         value: https://notebridge-frontend.onrender.com
       - key: MAX_FILE_SIZE_MB
         value: 50
 
-  # ── 2. FRONTEND (Static Site) ───────────────────────────────
+  # ── 2. FRONTEND (Static Site: React + Vite build) ───────────
   - type: web
     name: notebridge-frontend
     runtime: static
-    rootDir: frontend
-    staticPublishPath: .
+    rootDir: frontend-react
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://notebridge-backend.onrender.com/api
     headers:
       - path: /*
         name: Cache-Control
         value: no-cache
     routes:
+      # SPA fallback: serve index.html for all unknown paths (React Router)
       - type: rewrite
         source: /*
-        destination: /login.html
+        destination: /index.html

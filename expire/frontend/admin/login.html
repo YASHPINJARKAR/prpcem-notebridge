@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Sign In – PRPCEM NoteBridge</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <link rel="stylesheet" href="../css/components.css"/>
+  <link rel="stylesheet" href="../css/animations.css"/>
+  <style>
+    body{display:flex;min-height:100vh;align-items:stretch;}
+    .login-wrap{display:flex;width:100%;min-height:100vh;}
+    /* Left side (Branding) */
+    .login-left{flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#F0FDF4,#ECFDF5,#F0FDFA);padding:3rem;position:relative;overflow:hidden;}
+    .lb1{position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(16,185,129,.15);top:-80px;right:-80px;filter:blur(60px);animation:blobPulse 10s ease-in-out infinite;}
+    .lb2{position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(5,150,105,.12);bottom:-60px;left:-60px;filter:blur(50px);animation:blobPulse 14s ease-in-out infinite reverse;}
+    .login-left-content{max-width:440px;text-align:center;position:relative;z-index:1;}
+    .brand-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .brand-icon img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 50%;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      background: transparent;
+    }
+    .brand-name{font-size:1.8rem;font-weight:900;margin-bottom:.5rem;}
+    .brand-tag{font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:340px;margin:0 auto 2rem;}
+    
+    /* Right side (Login Form) */
+    .login-right{width:480px;flex-shrink:0;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem;box-shadow:-8px 0 32px rgba(0,0,0,.06);}
+    .form-wrap{width:100%;max-width:380px;}
+    .greeting{font-size:1.6rem;font-weight:800;margin-bottom:.35rem;}
+    .subtext{font-size:.875rem;color:var(--text-secondary);margin-bottom:1.75rem;}
+    .form-fields{display:flex;flex-direction:column;gap:13px;}
+    
+    @media(max-width:880px){.login-left{display:none;}.login-right{width:100%;}}
+    @media(max-width:480px){.login-right{padding:2rem 1.5rem;}}
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="page-content" style="width:100%;display:flex;">
+  <div class="login-wrap">
+
+    <!-- Left (Branding) -->
+    <div class="login-left">
+      <div class="lb1"></div><div class="lb2"></div>
+      <div class="login-left-content animate-fadeInLeft">
+        <div class="brand-icon">
+          <img src="../images/logo.png" alt="College Logo">
+        </div>
+        <div class="brand-name">PRPCEM <span class="gradient-text" style="background: linear-gradient(135deg, var(--success), #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NoteBridge</span></div>
+        <p class="brand-tag">Admin Portal – Control panel and platform management tools for PRPCEM NoteBridge.</p>
+      </div>
+    </div>
+
+    <!-- Right (Form) -->
+    <div class="login-right">
+      <div class="form-wrap animate-fadeInRight">
+        <p class="greeting" id="greeting">Admin Portal 🛠️</p>
+        <p class="subtext">Sign in to manage the NoteBridge platform</p>
+
+        <!-- Login Form -->
+        <div id="f-login" class="form-fields">
+          <div class="input-group">
+            <label id="l-uid-label">Admin Email</label>
+            <div class="input-icon-wrap"><span class="input-icon" id="l-uid-icon">✉️</span>
+              <input id="l-uid" type="email" class="input" placeholder="admin@prpcem.edu.in" required/>
+            </div>
+            <label>Password</label>
+            <div class="input-icon-wrap"><span class="input-icon">🔒</span>
+              <input id="l-pass" type="password" class="input" placeholder="Enter admin password" required/>
+            </div>
+          </div>
+          <button id="login-btn" class="btn btn-success w-full btn-lg" onclick="doLogin()" style="margin-top:10px; background: linear-gradient(135deg, var(--success), #059669); border: none;">Sign In →</button>
+        </div>
+
+        <p style="text-align:center;margin-top:2rem;font-size:.8rem;"><a href="../login.html" style="color:var(--text-muted); text-decoration: none;">← Back to Main Portal</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/background.js"></script>
+<script>
+  const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://notebridge-backend.onrender.com/api';
+
+  function showErr(msg) {
+    let el = document.getElementById('err-msg');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'err-msg';
+      el.style.cssText = 'background:#FEE2E2;border:1.5px solid #EF4444;color:#B91C1C;border-radius:10px;padding:10px 14px;font-size:.83rem;font-weight:600;margin-top:8px;animation:fadeInUp .3s ease';
+      document.getElementById('f-login').appendChild(el);
+    }
+    el.textContent = msg;
+    setTimeout(() => el.remove(), 6000);
+  }
+
+  function setBtn(id, text, disabled) {
+    const btn = document.getElementById(id);
+    if (btn) { btn.textContent = text; btn.disabled = disabled; }
+  }
+
+  async function apiPost(endpoint, body) {
+    const res = await fetch(`${API}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
+  async function doLogin() {
+    const uid = document.getElementById('l-uid').value.trim();
+    const pass = document.getElementById('l-pass').value;
+    if (!uid || !pass) { showErr('Please enter your credentials.'); return; }
+    setBtn('login-btn', '⏳ Signing in…', true);
+    
+    const payload = { email: uid, password: pass, role: 'admin' };
+
+    try {
+      const data = await apiPost('/auth/login', payload);
+      if (!data.success) {
+        showErr(data.message || 'Invalid email or password.');
+        setBtn('login-btn', 'Sign In →', false);
+        return;
+      }
+      if (data.user.role !== 'admin') {
+        showErr('Access Denied: Only administrators can log in here.');
+        setBtn('login-btn', 'Sign In →', false);
+        return;
+      }
+      sessionStorage.setItem('nb_token', data.token);
+      sessionStorage.setItem('nb_user',  JSON.stringify(data.user));
+      setBtn('login-btn', '✅ Redirecting…', true);
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+    } catch (err) {
+      showErr('❌ Cannot connect to server. Make sure backend is running on port 5000.');
+      setBtn('login-btn', 'Sign In →', false);
+    }
+  }
+
+  // If already logged in as admin, redirect directly
+  try {
+    const u = JSON.parse(sessionStorage.getItem('nb_user') || 'null');
+    if (u && u.role === 'admin' && sessionStorage.getItem('nb_token')) {
+      window.location.href = 'dashboard.html';
+    }
+  } catch(e) { sessionStorage.clear(); }
+</script>
+</body>
+</html>

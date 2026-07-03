@@ -32,7 +32,9 @@ const allowedOrigins = [
   ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(u => u.trim()) : []),
   'http://localhost:3000',
   'http://localhost:3500',
+  'http://localhost:5173',
   'http://127.0.0.1:3500',
+  'http://127.0.0.1:5173',
   'http://127.0.0.1:5500',
   'null',                     // file:// origin for direct open
 ].filter(Boolean);
@@ -63,6 +65,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 
 /* ── API Routes ─────────────────────────────────────────────── */
 app.use('/api/auth',          require('./routes/auth'));
+app.use('/api/users',         require('./routes/users'));
 app.use('/api/notes',         require('./routes/notes'));
 app.use('/api/comments',      require('./routes/comments'));
 app.use('/api/bookmarks',     require('./routes/bookmarks'));
@@ -78,6 +81,32 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     database: 'MongoDB Connected',
   });
+});
+
+/* ── Test Email Endpoint ────────────────────────────────────── */
+app.get('/api/email/test', async (req, res) => {
+  const { to } = req.query;
+  if (!to) {
+    return res.status(400).json({ success: false, message: 'Please specify "to" query parameter.' });
+  }
+  try {
+    const { sendEmail } = require('./utils/sendEmail');
+    await sendEmail({
+      to,
+      subject: '🧪 PRPCEM NoteBridge Email Test',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; max-width: 500px; margin: auto;">
+          <h2 style="color: #3b82f6;">🧪 Email Integration Test</h2>
+          <p>This email verifies that your SMTP config in your <code>.env</code> file is working perfectly!</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 0.85rem; color: #64748b;">Sent at: ${new Date().toLocaleString()}</p>
+        </div>
+      `
+    });
+    res.json({ success: true, message: `Test email sent successfully to ${to}!` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, message: 'Failed to send test email. Please check your SMTP settings in backend/.env' });
+  }
 });
 
 /* ── 404 Handler ────────────────────────────────────────────── */

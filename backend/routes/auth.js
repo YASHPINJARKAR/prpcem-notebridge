@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
     const userStatus = role === 'admin' ? 'active' : 'pending';
 
     const user = await User.create({
-      firstName, lastName, email: email || `${rollNumber}@prpcem.edu.in`, password,
+      firstName, lastName, email: email || `student_${rollNumber}@notebridge.local`, password,
       role: role || 'student',
       department: department || '',
       branch: branch || '',
@@ -152,10 +152,9 @@ router.post('/forgot-password', async (req, res) => {
       return res.json({ success: true, message: 'If this email is registered, a temporary password has been sent.' });
     }
 
-    // Generate temp password (plain) → hash → save
+    // Generate temp password (plain) → save (pre-save hook will hash it automatically)
     const tempPassword = generateTempPassword(10);
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(tempPassword, salt);
+    user.password = tempPassword;
     await user.save({ validateBeforeSave: false });
 
     // Send email with plain temp password

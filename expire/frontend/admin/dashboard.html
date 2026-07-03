@@ -38,7 +38,7 @@
       <!-- Analytics Link Removed -->
       <div class="nav-item" onclick="showSection('sec-settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
       <div class="nav-section-label">Account</div>
-      <div class="nav-item" onclick="sessionStorage.clear(); window.location.href='../login.html'"><span class="nav-icon">🚪</span> Sign Out</div>
+      <div class="nav-item" onclick="sessionStorage.clear(); window.location.href='login.html'"><span class="nav-icon">🚪</span> Sign Out</div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -216,7 +216,7 @@ async function apiGet(endpoint) {
   const res = await fetch(`${API}${endpoint}`, {
     headers: { 'Authorization': `Bearer ${sessionStorage.getItem('nb_token')}` },
   });
-  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = 'login.html'; }
   return res.json();
 }
 
@@ -229,7 +229,7 @@ async function apiPost(endpoint, body = {}) {
     },
     body: JSON.stringify(body),
   });
-  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = 'login.html'; }
   return res.json();
 }
 
@@ -242,18 +242,18 @@ async function apiPut(endpoint, body = {}) {
     },
     body: JSON.stringify(body),
   });
-  if(res.status === 401) { sessionStorage.clear(); window.location.href = '../login.html'; }
+  if(res.status === 401) { sessionStorage.clear(); window.location.href = 'login.html'; }
   return res.json();
 }
 
 async function init() {
   const token = sessionStorage.getItem('nb_token');
   const userStr = sessionStorage.getItem('nb_user');
-  if(!token || !userStr) { window.location.href = '../login.html'; return; }
+  if(!token || !userStr) { window.location.href = 'login.html'; return; }
   
   try {
     currentUser = JSON.parse(userStr);
-    if(currentUser.role !== 'admin') { window.location.href = '../login.html'; return; }
+    if(currentUser.role !== 'admin') { window.location.href = 'login.html'; return; }
     
     // Update UI with user info
     const initName = (currentUser.firstName[0] + currentUser.lastName[0]).toUpperCase();

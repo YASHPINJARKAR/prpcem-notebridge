@@ -71,7 +71,7 @@ const forgotPasswordTemplate = (name, tempPassword, role) => `
       If you did not request this, please contact your admin.
     </div>
     <div style="margin-top:24px;text-align:center;">
-      <a href="http://localhost:3500/login.html" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#6366F1);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:.95rem;">
+      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#6366F1);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:.95rem;">
         🔑 Sign In to NoteBridge
       </a>
     </div>
@@ -107,7 +107,7 @@ const welcomeTemplate = (name, role) => `
     <p style="color:#475569;line-height:1.7;">Your <strong>${role}</strong> account has been created successfully on PRPCEM NoteBridge. Your account is now pending admin approval.</p>
     <p style="color:#475569;">You will receive another email once your account is approved.</p>
     <div style="margin-top:24px;text-align:center;">
-      <a href="http://localhost:3500/login.html" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#6366F1);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;">🚀 Go to NoteBridge</a>
+      <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#6366F1);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;">🚀 Go to NoteBridge</a>
     </div>
   </div>
   <div class="footer">© 2026 PRPCEM NoteBridge</div>
@@ -127,7 +127,7 @@ const approvalTemplate = (name) => `
   <div class="body">
     <p style="font-size:1.05rem;font-weight:600;color:#0F172A;">Hello, ${name}!</p>
     <p style="color:#475569;line-height:1.7;">Great news! Your PRPCEM NoteBridge account has been <strong>approved by the admin</strong>. You can now log in and start using the platform.</p>
-    <div style="margin-top:24px;text-align:center;"><a href="http://localhost:3500/login.html" style="display:inline-block;background:linear-gradient(135deg,#10B981,#3B82F6);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;">🎓 Start Learning</a></div>
+    <div style="margin-top:24px;text-align:center;"><a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display:inline-block;background:linear-gradient(135deg,#10B981,#3B82F6);color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;">🎓 Start Learning</a></div>
   </div>
   <div class="footer">© 2026 PRPCEM NoteBridge</div>
 </div></body></html>

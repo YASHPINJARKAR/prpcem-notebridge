@@ -14,6 +14,8 @@ const NoteSchema = new mongoose.Schema({
   filePath:    { type: String, required: true },
   fileType:    { type: String },          // PDF, PPT, DOC, etc.
   fileSize:    { type: Number, default: 0 },
+  cloudinaryId:{ type: String, default: '' },
+
 
   // Upload info
   uploadedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
