@@ -6,8 +6,8 @@ const Note     = require('../models/Note');
 const Notification = require('../models/Notification');
 const User     = require('../models/User');
 const { protect, authorize, requireActive } = require('../middleware/auth');
-const { getFileTypeLabel } = require('../middleware/upload');
-const { uploadCloudinary, cloudinary } = require('../middleware/cloudinaryUpload');
+const { upload, getFileTypeLabel } = require('../middleware/upload');
+const { cloudinary } = require('../middleware/cloudinaryUpload');
 const { sendEmail, newNoteTemplate } = require('../utils/sendEmail');
 
 /* ── GET /api/notes — List notes with filters ───────────────── */
@@ -69,7 +69,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 /* ── POST /api/notes — Upload note (Teacher only) ───────────── */
-router.post('/', protect, requireActive, authorize('teacher', 'admin'), uploadCloudinary.single('file'), async (req, res) => {
+router.post('/', protect, requireActive, authorize('teacher', 'admin'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Please upload a file.' });
 
@@ -86,10 +86,10 @@ router.post('/', protect, requireActive, authorize('teacher', 'admin'), uploadCl
       year: year || '', section: normalizedSection,
       tags: tags ? tags.split(',').map(t => t.trim()) : [],
       fileName: req.file.originalname,
-      filePath: req.file.path, // Cloudinary URL
+      filePath: req.file.path,
       fileType,
       fileSize: req.file.size,
-      cloudinaryId: req.file.filename, // Cloudinary public ID
+      cloudinaryId: '', // Local storage has no Cloudinary ID
       uploadedBy: req.user._id,
       status: (req.user.role === 'teacher' || req.user.role === 'admin') ? 'approved' : 'pending',
       isScheduled: isScheduled === 'true',
@@ -170,13 +170,19 @@ router.post('/:id/view', async (req, res) => {
   }
 });
 
-/* ── GET /api/notes/:id/download — Increment download, redirect to Cloudinary */
+/* ── GET /api/notes/:id/download — Serve file for download ── */
 router.get('/:id/download', protect, requireActive, async (req, res) => {
   try {
     const note = await Note.findByIdAndUpdate(req.params.id, { $inc: { downloads: 1 } }, { new: true });
     if (!note) return res.status(404).json({ success: false, message: 'Note not found.' });
-    // Redirect client to Cloudinary URL for direct download
-    res.redirect(note.filePath);
+    
+    if (note.cloudinaryId) {
+      // Redirect client to Cloudinary URL for direct download
+      res.redirect(note.filePath);
+    } else {
+      // Serve local file
+      res.download(path.resolve(note.filePath), note.fileName);
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -187,15 +193,21 @@ router.get('/:id/preview', async (req, res) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ success: false, message: 'Note not found.' });
-    // Redirect client to Cloudinary URL for preview
-    res.redirect(note.filePath);
+    
+    if (note.cloudinaryId) {
+      // Redirect client to Cloudinary URL for preview
+      res.redirect(note.filePath);
+    } else {
+      // Serve local file for preview
+      res.sendFile(path.resolve(note.filePath));
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /* ── PUT /api/notes/:id — Update note ──────────────────────── */
-router.put('/:id', protect, requireActive, authorize('teacher', 'admin'), uploadCloudinary.single('file'), async (req, res) => {
+router.put('/:id', protect, requireActive, authorize('teacher', 'admin'), upload.single('file'), async (req, res) => {
   try {
     const note = await Note.findById(req.params.id);
     if (!note) return res.status(404).json({ success: false, message: 'Note not found.' });
@@ -210,7 +222,7 @@ router.put('/:id', protect, requireActive, authorize('teacher', 'admin'), upload
     if (tags)        note.tags        = tags.split(',').map(t => t.trim());
 
     // Simplification: removed versionHistory
-    // Handle file replacement on Cloudinary
+    // Handle file replacement
     if (req.file) {
       if (note.cloudinaryId) {
         try {
@@ -219,12 +231,18 @@ router.put('/:id', protect, requireActive, authorize('teacher', 'admin'), upload
         } catch (e) {
           console.warn('Failed to delete old file from Cloudinary:', e.message);
         }
+      } else if (fs.existsSync(note.filePath)) {
+        try {
+          fs.unlinkSync(note.filePath);
+        } catch (e) {
+          console.warn('Failed to delete old local file:', e.message);
+        }
       }
       note.fileName = req.file.originalname;
       note.filePath = req.file.path;
       note.fileType = getFileTypeLabel(req.file.mimetype);
       note.fileSize = req.file.size;
-      note.cloudinaryId = req.file.filename;
+      note.cloudinaryId = '';
     }
     
     // Status remains approved if teacher/admin
